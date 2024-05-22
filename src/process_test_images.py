@@ -84,12 +84,16 @@ def processTestImageDirectory(
     imgFound = 0
     for image in os.listdir(copyToTestPath):
         if image.endswith(".png") or image.endswith(".jpg"):
-            print("Test image found: " + image)
+            if imgFound < 5:
+                print("Test image found: " + image)
             img = cv2.imread(image)
             images.append(img)
             imgFound += 1
         else:
             print("Test image format invalid. jpg and png only.")
+
+    if imgFound > 5:
+        print("...")
 
     # Process valid images
     os.chdir(pccdTestImgClssPath)

@@ -134,7 +134,7 @@ if __name__ == "__main__":
             ),
         )
     trainloader = torch.utils.data.DataLoader(
-        trainset, batch_size=batch_size, shuffle=True, num_workers=2
+        trainset, batch_size=batch_size, shuffle=True, num_workers=2, persistent_workers=True
     )
     classes = trainset.classes
 

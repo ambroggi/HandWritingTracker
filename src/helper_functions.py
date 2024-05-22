@@ -56,26 +56,26 @@ def setMakePaths(trainPath, validPath, testPath, resultPathParent):
     todaynowstr = getTodayNowStr()
     if not resultPathParent:
         resultPathParent = os.path.dirname(cwdPath)
-        resultPathParent = os.path.join(resultPathParent, "runs\\")
+        resultPathParent = os.path.join(resultPathParent, "runs", "")
     resultPathParent = os.path.join(resultPathParent, todaynowstr)
 
     # subfolders for this run:
 
     # original test images are copied FROM this folder
     if not testPath:
-        copyFromTestPath = os.path.join(cwdPath, "data\\testData\\testImages\\")
+        copyFromTestPath = os.path.join(cwdPath, "data", "testData", "testImages", "")
     else:
         copyFromTestPath = testPath
 
     # original test images are copied TO this folder
-    copyToTestPath = os.path.join(resultPathParent, "originalTestImages\\")
+    copyToTestPath = os.path.join(resultPathParent, "originalTestImages", "")
 
     # processed test images are stored in class folder "images" in this folder
-    pccdTestImgPath = os.path.join(resultPathParent, "processedTestImages\\")
-    pccdTestImgClssPath = os.path.join(pccdTestImgPath, "images\\")
+    pccdTestImgPath = os.path.join(resultPathParent, "processedTestImages", "")
+    pccdTestImgClssPath = os.path.join(pccdTestImgPath, "images", "")
 
     # result data is stored in this folder
-    resultPath = os.path.join(resultPathParent, "results\\")
+    resultPath = os.path.join(resultPathParent, "results", "")
 
     makeFileStructure(copyToTestPath, pccdTestImgClssPath, resultPath)
 
