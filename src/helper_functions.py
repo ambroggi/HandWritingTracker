@@ -117,7 +117,7 @@ def analyzeLogits(logits: torch.Tensor, varThreshold):
     varmax_mask = variance < varThreshold
     shape = logits.shape
     unknown = torch.zeros(shape[0], device=logits.device)
-    unknown[varmax_mask] = 2
+    unknown[varmax_mask] = -1
     confidence, classif = torch.max(torch.softmax(logits, dim=-1), 1)
     output = torch.stack([classif, confidence, variance, unknown], dim=-1)
     return output
@@ -135,10 +135,21 @@ def writeToCSV(resultPath, results):
     print("Batch Result Data Saved to CSV.")
 
 
+def storeLogits(logPath, logits_tensor, true_names):
+    resultsCSV = os.path.join(logPath, "logits.csv")
+    with open(resultsCSV, "a") as fd:
+        for logits, name in zip(logits_tensor, true_names):
+            # https://stackoverflow.com/a/74059533
+            results_str = ", ".join([f"{x}" for x in logits]) + f", {name}\n"
+            fd.write(results_str)
+    print("Logit Data Saved to CSV.")
+
+
 # Create results plot by batch
 def plotImages(images, results, batch, filepath):
     fig = plt.figure(figsize=(36, 36))
     font = {"family": "normal", "weight": "bold", "size": 22}
+    font
     plt.rcParams.update({"font.size": 22})
     for i, image in enumerate(images):
         fig.add_subplot(8, 4, i + 1)
@@ -156,6 +167,7 @@ def plotImages(images, results, batch, filepath):
         plt.tight_layout()
     filepath = os.path.join(filepath, "batch_{b1}.png".format(b1=batch))
     fig.savefig(filepath)
+    plt.close()
     print("Plot of Batch Images Saved.")
 
 
@@ -164,3 +176,18 @@ def getTodayNowStr():
         datetime.utcnow()
         .strftime("%Y_%m_%d_%H_%M_%S_%f")
     )
+
+
+def filter_class_idx(dataset: torch.utils.data.Dataset, classes: list[int] = []):
+    idx = torch.tensor([True for _ in dataset.targets])
+    # https://stackoverflow.com/a/63975459
+    for x in classes:
+        idx &= (dataset.targets != x)
+    dataset.targets = dataset.targets[idx]
+    dataset.data = dataset.data[idx]
+    if hasattr(dataset, "classes") and hasattr(dataset, "class_to_idx"):
+        dataset.classes = [y for x, y in enumerate(dataset.classes) if x not in classes]
+        # t1 = {x: dataset.class_to_idx[x] for x in dataset.class_to_idx.keys() if x in dataset.classes}
+        # t2 = {x: -1 for x in dataset.class_to_idx.keys() if x not in dataset.classes}
+        # t1.update(t2)
+        # dataset.class_to_idx = t1

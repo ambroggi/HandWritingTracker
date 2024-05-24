@@ -34,7 +34,7 @@ def trainModel(mod, trainloader):
     print("Finished Training.")
 
 
-def validateModel(mod, validationloader, classes):
+def validateModel(mod, validationloader, classes, logPath=""):
     print("Validating Model...")
     correct_pred = {classname: 0 for classname in classes}
     total_pred = {classname: 0 for classname in classes}
@@ -43,6 +43,7 @@ def validateModel(mod, validationloader, classes):
         for data in validationloader:
             images, labels = data
             outputs = mod(images)
+            hf.storeLogits(logPath, outputs, labels)
             _, predictions = torch.max(outputs, 1)
             for label, prediction in zip(labels, predictions):
                 if label == prediction:
@@ -51,8 +52,9 @@ def validateModel(mod, validationloader, classes):
 
     # print accuracy for each class
     for classname, correct_count in correct_pred.items():
-        accuracy = 100 * float(correct_count) / total_pred[classname]
-        print(f"Accuracy for class: {classname:5s} is {accuracy:.1f} %")
+        if total_pred[classname] > 0:
+            accuracy = 100 * float(correct_count) / total_pred[classname]
+            print(f"Accuracy for class: {classname:5s} is {accuracy:.1f} %")
 
 
 # Make Predictions of Test Images using Model
@@ -68,12 +70,13 @@ def predictWithModel(
         for data in testloader:
             print("Testing Batch: {b0} of {b1}".format(b0=i + 1, b1=len(testloader)))
             i = i + 1
-            images, _ = data
+            images, label = data
             logits = model(images)
             results = hf.analyzeLogits(logits, varThreshold)
+            hf.storeLogits(resultPath, logits, -1 * torch.ones_like(label))
             predictions.append(results)
             for res in results:
-                if res[3] == 2:
+                if res[3] == -1:
                     lowVarCount = lowVarCount + 1
                 elif res[1] >= confThreshold:
                     goodPredCount = goodPredCount + 1

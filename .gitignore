@@ -526,3 +526,4 @@ cython_debug/
 .vscode
 data/
 runs
+.DS_Store

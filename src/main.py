@@ -1,14 +1,14 @@
-import argparse
-import helper_functions as hf
-import model as m
-import model_functions as mf
-import os
-import process_test_images as pti
-import torch
-import torchvision
-import torchvision.transforms as transforms
-
 if __name__ == "__main__":
+    import argparse
+    import helper_functions as hf
+    import model as m
+    import model_functions as mf
+    import os
+    import process_test_images as pti
+    import torch
+    import torchvision
+    import torchvision.transforms as transforms
+
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Argument Parser")
     parser.add_argument(
@@ -57,22 +57,22 @@ if __name__ == "__main__":
         "-c",
         "--buildCSV",
         help="flag to build csv file of results",
-        required=False, 
-        action="store_false", # default true
+        required=False,
+        action="store_false",  # default true
     )  
     parser.add_argument(
         "-p",
         "--plotResults",
         help="flag to plot images with results",
-        required=False, 
-        action="store_false", # default true
+        required=False,
+        action="store_false",  # default true
     )  
     parser.add_argument(
         "-o",
         "--overrideExit",
         help="flag to override any early exits",
-        required=False, 
-        action="store_true", # default false
+        required=False,
+        action="store_true",  # default false
     )  
     args = parser.parse_args()
 
@@ -126,13 +126,16 @@ if __name__ == "__main__":
     # else default training set
     else:
         trainset = torchvision.datasets.MNIST(
-            root="./data",
-            train=False,
+            root="./src/data",
+            train=True,
             download=True,
             transform=transforms.Compose(
                 [transforms.Grayscale(num_output_channels=3), transforms.ToTensor()]
             ),
         )
+
+    hf.filter_class_idx(trainset, [7, 8, 9])
+
     trainloader = torch.utils.data.DataLoader(
         trainset, batch_size=batch_size, shuffle=True, num_workers=2, persistent_workers=True
     )
@@ -140,15 +143,18 @@ if __name__ == "__main__":
 
     # Prepare Validation DataSet
     validateset = torchvision.datasets.MNIST(
-        root="./data",
+        root="./src/data",
         train=False,
         download=True,
         transform=transforms.Compose(
             [transforms.Grayscale(num_output_channels=3), transforms.ToTensor()]
         ),
     )
+
+    hf.filter_class_idx(validateset, [7, 8, 9])
+
     validationloader = torch.utils.data.DataLoader(
-        trainset, batch_size=batch_size, shuffle=True, num_workers=2
+        validateset, batch_size=batch_size, shuffle=True, num_workers=2
     )
 
     # Preprocess Test Images
@@ -167,14 +173,29 @@ if __name__ == "__main__":
         testset, batch_size=batch_size, shuffle=False, num_workers=2
     )
 
+    testset = torchvision.datasets.MNIST(
+        root="./src/data",
+        train=False,
+        download=True,
+        transform=transforms.Compose(
+            [transforms.Grayscale(num_output_channels=3), transforms.ToTensor()]
+        ),
+    )
+
+    hf.filter_class_idx(testset, [0, 1, 2, 3, 4, 5, 6])
+
+    testloader = torch.utils.data.DataLoader(
+        testset, batch_size=batch_size, shuffle=True, num_workers=2
+    )
+
     # Create Model
-    mod = m.model()
+    mod = m.model(len(classes))
 
     # Train Model
     mf.trainModel(mod, trainloader)
 
     # Validate Model
-    mf.validateModel(mod, validationloader, classes)
+    mf.validateModel(mod, validationloader, classes, resultPath)
 
     # Make Predictions
     mf.predictWithModel(
