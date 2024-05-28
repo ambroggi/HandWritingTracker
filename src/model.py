@@ -4,12 +4,23 @@ import torch.nn.functional as F
 
 
 class model(nn.Module):
-    def __init__(self, out_dim=10):
+    def __init__(self, out_dim=10, in_channels=3, dataselection_object=None, classes=None):
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 6, 5)
+
+        if dataselection_object:
+            out_dim = dataselection_object.classcount
+            in_channels = dataselection_object.channels
+            fc1_size = dataselection_object.size_after_convolution
+
+        if classes:
+            self.classes_names = classes
+        else:
+            self.classes_names = {x: x for x in range(out_dim)}
+
+        self.conv1 = nn.Conv2d(in_channels, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 4 * 4, 120)
+        self.fc1 = nn.Linear(fc1_size, 120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, out_dim)
 

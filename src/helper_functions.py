@@ -26,7 +26,7 @@ def validatePathArgs(argPath, argDescStr):
         return argPath
 
 
-def setMakePaths(trainPath, validPath, testPath, resultPathParent):
+def setMakePaths(trainPath, validPath, testPath, resultPathParent, datasetName):
     # cwdPath              = absolute path of this file
     # trainpath            = absolute path of training dataset 
     # validpath            = absolute path of validation dataset 
@@ -56,7 +56,7 @@ def setMakePaths(trainPath, validPath, testPath, resultPathParent):
     todaynowstr = getTodayNowStr()
     if not resultPathParent:
         resultPathParent = os.path.dirname(cwdPath)
-        resultPathParent = os.path.join(resultPathParent, "runs", "")
+        resultPathParent = os.path.join(resultPathParent, "runs", datasetName, "")
     resultPathParent = os.path.join(resultPathParent, todaynowstr)
 
     # subfolders for this run:
@@ -146,7 +146,7 @@ def storeLogits(logPath, logits_tensor, true_names):
 
 
 # Create results plot by batch
-def plotImages(images, results, batch, filepath):
+def plotImages(images, results, batch, filepath, classif_convert):
     fig = plt.figure(figsize=(36, 36))
     font = {"family": "normal", "weight": "bold", "size": 22}
     font
@@ -159,7 +159,7 @@ def plotImages(images, results, batch, filepath):
             label = "var: {r0}".format(r0=var)
         else:
             conf = "{:.2f}".format(conf)
-            label = "class: {r1}, conf: {r2}".format(r1=classif, r2=conf)
+            label = f"class: {classif_convert[int(classif)]}, conf: {conf}"
         plt.imshow(image.numpy()[0])
         plt.axis("off")
         plt.title(label)
@@ -179,15 +179,46 @@ def getTodayNowStr():
 
 
 def filter_class_idx(dataset: torch.utils.data.Dataset, classes: list[int] = []):
+    if hasattr(dataset, "true_names_mapping"):
+        invert_mapping_ = {dataset.true_names_mapping[x]: x for x in dataset.true_names_mapping}
+        class_ids = [invert_mapping_[x] for x in classes]
+    else:
+        class_ids = classes
+
     idx = torch.tensor([True for _ in dataset.targets])
     # https://stackoverflow.com/a/63975459
-    for x in classes:
+    for x in class_ids:
         idx &= (dataset.targets != x)
     dataset.targets = dataset.targets[idx]
-    dataset.data = dataset.data[idx]
+    if isinstance(dataset.data, torch.Tensor):
+        dataset.data = dataset.data[idx]
+    else:
+        dataset.data = [datum for datum, keep in zip(dataset.data, idx) if keep]
     if hasattr(dataset, "classes") and hasattr(dataset, "class_to_idx"):
         dataset.classes = [y for x, y in enumerate(dataset.classes) if x not in classes]
         # t1 = {x: dataset.class_to_idx[x] for x in dataset.class_to_idx.keys() if x in dataset.classes}
         # t2 = {x: -1 for x in dataset.class_to_idx.keys() if x not in dataset.classes}
         # t1.update(t2)
         # dataset.class_to_idx = t1
+
+
+def target_remaping(dataset: torch.utils.data.Dataset, classes: list[int] = []):
+    move_to_front = [a for a in range(len(dataset.classes)) if a not in classes]
+    move_to_back = classes
+
+    mapping_ = {y: x for x, y in enumerate(move_to_front)}
+    mapping_.update({y: x+len(mapping_) for x, y in enumerate(move_to_back)})
+    dataset.true_names_mapping = {mapping_[x]: x for x in mapping_.keys()}
+    dataset.targets.apply_(lambda x: mapping_[x])
+
+
+# def _target_remap(dataset: torch.utils.data.Dataset, remapping: dict):
+
+#     for old_name
+
+# https://discuss.pytorch.org/t/dataloader-error-trying-to-resize-storage-that-is-not-resizable/177584/2
+def collate_fn(batch):
+    return {
+      'pixel_values': torch.stack([x['pixel_values'] for x in batch]),
+      'labels': torch.tensor([x['labels'] for x in batch])
+    }

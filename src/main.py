@@ -3,11 +3,10 @@ if __name__ == "__main__":
     import helper_functions as hf
     import model as m
     import model_functions as mf
-    import os
-    import process_test_images as pti
+    import select_dataset
+    # import os
+    # import process_test_images as pti
     import torch
-    import torchvision
-    import torchvision.transforms as transforms
 
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Argument Parser")
@@ -74,6 +73,21 @@ if __name__ == "__main__":
         required=False,
         action="store_true",  # default false
     )  
+    # parser.add_argument(
+    #     "-u",
+    #     "--unknownclasses",
+    #     help="list of all index number of unknown classes",
+    #     required=False,
+    #     default=""
+    # )  
+    parser.add_argument(
+        "-d",
+        "--dataset",
+        help="what dataset to load",
+        required=False,
+        default="MNIST",
+        choices=["MNIST", "Flowers102", "Food101"]
+    )
     args = parser.parse_args()
 
     # Get / Validate Args
@@ -83,9 +97,11 @@ if __name__ == "__main__":
     validPath = hf.validatePathArgs(args.validpath, "Validation Dataset")
     testPath = hf.validatePathArgs(args.testpath, "Testing Images")
     resultPath = hf.validatePathArgs(args.resultpath, "Results")
+    dataset = args.dataset
     buildCSV = args.buildCSV
     plotResults = args.plotResults
     overrideExit = args.overrideExit
+    unknownclasses = [1, 3, 4]
 
     if confThreshold > 1 or confThreshold < 0:
         print("Threshold should be between 0 and 1")
@@ -109,32 +125,14 @@ if __name__ == "__main__":
         pccdTestImgPath,
         pccdTestImgClssPath,
         resultPath,
-    ] = hf.setMakePaths(trainPath, validPath, testPath, resultPath)
+    ] = hf.setMakePaths(trainPath, validPath, testPath, resultPath, dataset)
 
-    # Prepare Training Dataset
-    transform = transforms.Compose(
-        [
-            transforms.Grayscale(num_output_channels=3),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-        ]
-    )
     batch_size = 32
-    # If custom training set
-    if trainPath:
-        trainset = torchvision.datasets.ImageFolder(trainPath, transform=transform)
-    # else default training set
-    else:
-        trainset = torchvision.datasets.MNIST(
-            root="./src/data",
-            train=True,
-            download=True,
-            transform=transforms.Compose(
-                [transforms.Grayscale(num_output_channels=3), transforms.ToTensor()]
-            ),
-        )
 
-    hf.filter_class_idx(trainset, [7, 8, 9])
+    get_data = select_dataset.get_data(unknown_classes=unknownclasses, version=dataset)
+
+    # Prepare Training DataSet
+    trainset = get_data.get_known(trainPath, train=True)
 
     trainloader = torch.utils.data.DataLoader(
         trainset, batch_size=batch_size, shuffle=True, num_workers=2, persistent_workers=True
@@ -142,54 +140,20 @@ if __name__ == "__main__":
     classes = trainset.classes
 
     # Prepare Validation DataSet
-    validateset = torchvision.datasets.MNIST(
-        root="./src/data",
-        train=False,
-        download=True,
-        transform=transforms.Compose(
-            [transforms.Grayscale(num_output_channels=3), transforms.ToTensor()]
-        ),
-    )
-
-    hf.filter_class_idx(validateset, [7, 8, 9])
+    validateset = get_data.get_known(train=False)
 
     validationloader = torch.utils.data.DataLoader(
         validateset, batch_size=batch_size, shuffle=True, num_workers=2
     )
 
-    # Preprocess Test Images
-    pti.processTestImageDirectory(
-        cwdPath, copyFromTestPath, copyToTestPath, pccdTestImgClssPath, overrideExit
-    )
-
-    # Prepare Testset
-    # If there are no test images, exit early
-    if not os.listdir(pccdTestImgClssPath):
-        print("No test images available.")
-        print("Exiting early to avoid crash...")
-        exit()
-    testset = torchvision.datasets.ImageFolder(pccdTestImgPath, transform=transform)
-    testloader = torch.utils.data.DataLoader(
-        testset, batch_size=batch_size, shuffle=False, num_workers=2
-    )
-
-    testset = torchvision.datasets.MNIST(
-        root="./src/data",
-        train=False,
-        download=True,
-        transform=transforms.Compose(
-            [transforms.Grayscale(num_output_channels=3), transforms.ToTensor()]
-        ),
-    )
-
-    hf.filter_class_idx(testset, [0, 1, 2, 3, 4, 5, 6])
+    testset = get_data.get_unknown()
 
     testloader = torch.utils.data.DataLoader(
         testset, batch_size=batch_size, shuffle=True, num_workers=2
     )
 
     # Create Model
-    mod = m.model(len(classes))
+    mod = m.model(dataselection_object=get_data, classes=classes)
 
     # Train Model
     mf.trainModel(mod, trainloader)

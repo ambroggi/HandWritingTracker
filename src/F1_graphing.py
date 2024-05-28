@@ -7,15 +7,18 @@ import plotly.express as px
 
 VAR_BASE_THRESH = 26
 SOFT_BASE_TRHESH = 0.98
+DATASET = "MNIST"   # Or "*"
 
 
-def get_latest_folder(n_th_latest=None) -> str:
+def get_latest_folder(n_th_latest=None, dataset=None) -> str:
+    if dataset is None:
+        dataset = DATASET
     if n_th_latest is None:
         # https://stackoverflow.com/a/32093754
-        return max(glob.glob(os.path.join("runs", '*/')), key=os.path.getmtime)
+        return max(glob.glob(os.path.join("runs", f'{dataset}/', '*/')), key=os.path.getmtime)
     else:
         # https://stackoverflow.com/a/32093754
-        return sorted(glob.glob(os.path.join("runs", '*/')), key=os.path.getmtime)[-n_th_latest-1]
+        return sorted(glob.glob(os.path.join("runs", f'{dataset}/', '*/')), key=os.path.getmtime)[-n_th_latest-1]
 
 
 def get_latest_file(n_th_latest=None) -> str:

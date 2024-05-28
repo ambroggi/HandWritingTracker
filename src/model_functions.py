@@ -75,15 +75,18 @@ def predictWithModel(
             results = hf.analyzeLogits(logits, varThreshold)
             hf.storeLogits(resultPath, logits, -1 * torch.ones_like(label))
             predictions.append(results)
+
+            if buildCSV:
+                hf.writeToCSV(resultPath, results)
+
             for res in results:
                 if res[3] == -1:
                     lowVarCount = lowVarCount + 1
                 elif res[1] >= confThreshold:
                     goodPredCount = goodPredCount + 1
-            if buildCSV:
-                hf.writeToCSV(resultPath, results)
+
             if plotResults:
-                hf.plotImages(images, results, i, resultPath)
+                hf.plotImages(images, results, i, resultPath, model.classes_names)
                 # plt.show()
     print("Testing Complete.")
     print(
