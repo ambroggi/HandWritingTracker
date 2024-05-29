@@ -58,35 +58,35 @@ if __name__ == "__main__":
         help="flag to build csv file of results",
         required=False,
         action="store_false",  # default true
-    )  
+    )
     parser.add_argument(
         "-p",
         "--plotResults",
         help="flag to plot images with results",
         required=False,
         action="store_false",  # default true
-    )  
+    )
     parser.add_argument(
         "-o",
         "--overrideExit",
         help="flag to override any early exits",
         required=False,
         action="store_true",  # default false
-    )  
+    )
     # parser.add_argument(
     #     "-u",
     #     "--unknownclasses",
     #     help="list of all index number of unknown classes",
     #     required=False,
     #     default=""
-    # )  
+    # )
     parser.add_argument(
         "-d",
         "--dataset",
         help="what dataset to load",
         required=False,
         default="MNIST",
-        choices=["MNIST", "Flowers102", "Food101"]
+        choices=["MNIST", "Flowers102", "Food101", "FasionMNIST", "Random", "Covertype"]
     )
     args = parser.parse_args()
 
@@ -102,6 +102,9 @@ if __name__ == "__main__":
     plotResults = args.plotResults
     overrideExit = args.overrideExit
     unknownclasses = [1, 3, 4]
+
+    if dataset in ["Covertype"]:
+        plotResults = False
 
     if confThreshold > 1 or confThreshold < 0:
         print("Threshold should be between 0 and 1")

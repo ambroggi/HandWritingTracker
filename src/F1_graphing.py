@@ -7,7 +7,7 @@ import plotly.express as px
 
 VAR_BASE_THRESH = 26
 SOFT_BASE_TRHESH = 0.98
-DATASET = "MNIST"   # Or "*"
+DATASET = "FasionMNIST"   # Or "*"
 
 
 def get_latest_folder(n_th_latest=None, dataset=None) -> str:

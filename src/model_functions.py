@@ -47,14 +47,20 @@ def validateModel(mod, validationloader, classes, logPath=""):
             _, predictions = torch.max(outputs, 1)
             for label, prediction in zip(labels, predictions):
                 if label == prediction:
-                    correct_pred[classes[label]] += 1
-                total_pred[classes[label]] += 1
+                    if isinstance(label, torch.Tensor):
+                        correct_pred[classes[label.item()]] += 1
+                    else:
+                        correct_pred[classes[label]] += 1
+                if isinstance(label, torch.Tensor):
+                    total_pred[classes[label.item()]] += 1
+                else:
+                    total_pred[classes[label]] += 1
 
     # print accuracy for each class
     for classname, correct_count in correct_pred.items():
         if total_pred[classname] > 0:
             accuracy = 100 * float(correct_count) / total_pred[classname]
-            print(f"Accuracy for class: {classname:5s} is {accuracy:.1f} %")
+            print(f"Accuracy for class: {classname} is {accuracy:.1f} %")
 
 
 # Make Predictions of Test Images using Model

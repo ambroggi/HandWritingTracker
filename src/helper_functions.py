@@ -28,8 +28,8 @@ def validatePathArgs(argPath, argDescStr):
 
 def setMakePaths(trainPath, validPath, testPath, resultPathParent, datasetName):
     # cwdPath              = absolute path of this file
-    # trainpath            = absolute path of training dataset 
-    # validpath            = absolute path of validation dataset 
+    # trainpath            = absolute path of training dataset
+    # validpath            = absolute path of validation dataset
     # copyFromTestPath     = absolute path of where orginal test images are copied FROM
     # copyToTestPath       = absolute path of where orginal test images are copied TO in results folder
     # pccdTestImgPath      = absolute path of processed test images
@@ -160,11 +160,12 @@ def plotImages(images, results, batch, filepath, classif_convert):
         else:
             conf = "{:.2f}".format(conf)
             label = f"class: {classif_convert[int(classif)]}, conf: {conf}"
-        plt.imshow(image.numpy()[0])
-        plt.axis("off")
-        plt.title(label)
-        plt.subplots_adjust(wspace=2, hspace=2)
-        plt.tight_layout()
+        if image.numpy()[0].ndim == 2:
+            plt.imshow(image.numpy()[0])
+            plt.axis("off")
+            plt.title(label)
+            plt.subplots_adjust(wspace=2, hspace=2)
+            plt.tight_layout()
     filepath = os.path.join(filepath, "batch_{b1}.png".format(b1=batch))
     fig.savefig(filepath)
     plt.close()
@@ -194,7 +195,7 @@ def filter_class_idx(dataset: torch.utils.data.Dataset, classes: list[int] = [])
         dataset.data = dataset.data[idx]
     else:
         dataset.data = [datum for datum, keep in zip(dataset.data, idx) if keep]
-    if hasattr(dataset, "classes") and hasattr(dataset, "class_to_idx"):
+    if hasattr(dataset, "classes"):
         dataset.classes = [y for x, y in enumerate(dataset.classes) if x not in classes]
         # t1 = {x: dataset.class_to_idx[x] for x in dataset.class_to_idx.keys() if x in dataset.classes}
         # t2 = {x: -1 for x in dataset.class_to_idx.keys() if x not in dataset.classes}

@@ -526,10 +526,25 @@ cython_debug/
 .vscode
 data/
 runs/MNIST/*
+runs/Food101/*
+runs/Flowers102/*
+runs/FasionMNIST/*
+runs/Random/*
+runs/Covertype/*
 .DS_Store
 
 !runs/MNIST/2024_05_23_19_36_57_613770
 !runs/MNIST/2024_05_23_19_20_20_196701
 !runs/MNIST/2024_05_23_02_50_00_494725
+!runs/Covertype/2024_05_29_22_26_44_616966
+!runs/Covertype/2024_05_29_22_37_28_227212
+!runs/Covertype/2024_05_29_22_37_46_563378
+!runs/Food101/2024_05_28_23_20_40_754581
+!runs/Food101/2024_05_28_23_20_32_727697
+!runs/Food101/2024_05_28_23_20_21_394691
+!runs/FasionMNIST/2024_05_29_18_05_36_642521
+!runs/FasionMNIST/2024_05_29_18_29_32_079656
+!runs/FasionMNIST/2024_05_29_18_33_00_801138
+
 
 *.png
