@@ -196,7 +196,7 @@ def filter_class_idx(dataset: torch.utils.data.Dataset, classes: list[int] = [])
     else:
         dataset.data = [datum for datum, keep in zip(dataset.data, idx) if keep]
     if hasattr(dataset, "classes"):
-        dataset.classes = [y for x, y in enumerate(dataset.classes) if x not in classes]
+        dataset.classes = [y for x, y in enumerate(dataset.classes) if x not in class_ids]
         # t1 = {x: dataset.class_to_idx[x] for x in dataset.class_to_idx.keys() if x in dataset.classes}
         # t2 = {x: -1 for x in dataset.class_to_idx.keys() if x not in dataset.classes}
         # t1.update(t2)

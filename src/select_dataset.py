@@ -383,7 +383,22 @@ class Covertype():
         print(max(self.y))
 
         self.classes = self.y.unique()
-        self.classcount = len(self.classes)
+        self.classcount = len(self.classes) - len(unknown_classes)
+
+        def gener():
+            x = 0
+            while x < 10000:
+                x += 1
+                yield True
+            while True:
+                yield False
+
+        geners = [gener() for x in self.classes]
+
+        undersampling_mask = [next(geners[x]) for x in self.y]
+
+        self.X = self.X[undersampling_mask]
+        self.y = self.y[undersampling_mask]
 
         # metadata
         # print(covertype.metadata)
@@ -392,8 +407,11 @@ class Covertype():
         # print(covertype.variables)
 
         train = genericData(self.X, self.y)
+        print(self.y.bincount())
         hf.target_remaping(train, unknown_classes)
+        print(train.targets.bincount())
         hf.filter_class_idx(train, unknown_classes)
+        print(train.targets.bincount())
 
         self.train, self.val = torch.utils.data.random_split(train, [3*len(train)//4, len(train)-3*len(train)//4])
         self.train.classes = train.classes
@@ -404,9 +422,10 @@ class Covertype():
         hf.filter_class_idx(self.test, [x for x in range(len(self.test.classes)) if x not in unknown_classes])
 
         self.unknown_classes = unknown_classes
-        self.size_after_convolution = len(self.X[0])
+        self.size_after_convolution = 160
         self.model_scale = 4
         self.channels = -1
+        self.classcount = len(self.classes) - len(unknown_classes)
 
     def get_known(self, path: str = False, train=False):
         if path:
