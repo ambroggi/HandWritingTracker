@@ -8,9 +8,9 @@ import plotly.express as px
 VAR_BASE_THRESH = 26
 SOFT_BASE_TRHESH = 0.98
 ENERGY_BASE_THRESH = -7.5
-DATASET = "Covertype"   # Or "*"
+# DATASET = "Covertype"   # Or "*"
 # DATASET = "MNIST"
-# DATASET = "Food101"
+DATASET = "Food101"
 # DATASET = "FasionMNIST"
 ENERGY_TEMP = 1
 
@@ -214,6 +214,7 @@ def graph_ROC(version: str, pth: str | os.PathLike = None):
     tense = torch.tensor(csv.iloc[:, :-1].to_numpy())
     mx = _roc_values_functions[version](tense)
     recall = []
+    f1 = []
 
     # All from: https://plotly.com/python/roc-and-pr-curves/
     fpr, tpr, thresholds = roc_curve(csv.iloc[:, -1], mx, pos_label=True)
@@ -226,6 +227,7 @@ def graph_ROC(version: str, pth: str | os.PathLike = None):
             unknowns = _roc_values_functions[version](tense).greater(t)
         prediction[unknowns] = -1
         recall.append(recall_score(csv.iloc[:, -1], prediction.numpy(), average="weighted"))
+        f1.append(f1_score(csv.iloc[:, -1], prediction.numpy(), average="weighted"))
 
     # The histogram of scores compared to true labels
     fig_hist = px.histogram(
@@ -239,7 +241,8 @@ def graph_ROC(version: str, pth: str | os.PathLike = None):
     df = pd.DataFrame({
         'False Positive Rate': fpr,
         'True Positive Rate': tpr,
-        "Recall": recall
+        "Recall": recall,
+        "F1": f1
     }, index=thresholds)
     df.index.name = "Thresholds"
     df.columns.name = "Rate"
@@ -314,6 +317,39 @@ def find_threshold_b(version: str, src_pth: str | os.PathLike = None, dst_pth: s
     return selected_threshold
 
 
+def find_threshold_c(version: str, src_pth: str | os.PathLike = None, dst_pth: str | os.PathLike = None) -> float:
+    if src_pth is None:
+        src_pth = get_latest_folder()
+    if dst_pth is None:
+        dst_pth = src_pth
+    if ".csv" not in src_pth:
+        csv = pandas_importing(os.path.join(src_pth, "results", "logits.csv"))
+    else:
+        csv = pandas_importing(src_pth)
+
+    tense = torch.tensor(csv.iloc[:, :-1].to_numpy())
+    mx = _roc_values_functions[version](tense)
+    labels = csv.iloc[:, -1] == -1
+    # roc = roc_curve(labels, mx, pos_label=True if version != "Energy" else False)
+    roc = roc_curve(labels, mx, pos_label=True)
+
+    selected_threshold = 0
+    max_f1 = 0
+    for tpr, fpr, threshold in zip(*roc):
+        prediction = tense.argmax(dim=1)
+        if version != "Energy":
+            unknowns = _roc_values_functions[version](tense).less(threshold)
+        else:
+            unknowns = _roc_values_functions[version](tense).greater(threshold)
+        prediction[unknowns] = -1
+        f1 = f1_score(csv.iloc[:, -1], prediction.numpy(), average="weighted")
+        if f1 > max_f1:
+            selected_threshold = threshold
+            max_f1 = f1
+
+    return selected_threshold
+
+
 if __name__ == "__main__":
     # get_average_F1()
     # get_average_k_uk_F1()
@@ -325,6 +361,7 @@ if __name__ == "__main__":
     # print("Done!")
     threshold_keys = None
     # threshold_keys = {"Soft": 0, "Softthresh": find_threshold_a("Softthresh"), "Var": find_threshold_a("Var"), "Energy": find_threshold_a("Energy")}
-    threshold_keys = {"Soft": 0, "Softthresh": find_threshold_b("Softthresh"), "Var": find_threshold_b("Var"), "Energy": find_threshold_b("Energy")}
+    # threshold_keys = {"Soft": 0, "Softthresh": find_threshold_b("Softthresh"), "Var": find_threshold_b("Var"), "Energy": find_threshold_b("Energy")}
+    threshold_keys = {"Soft": 0, "Softthresh": find_threshold_c("Softthresh"), "Var": find_threshold_c("Var"), "Energy": find_threshold_c("Energy")}
     get_average_F1(threshold_keys=threshold_keys)
     get_average_k_uk_F1(threshold_keys=threshold_keys)
