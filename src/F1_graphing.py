@@ -5,12 +5,12 @@ from sklearn.metrics import f1_score, roc_curve, recall_score
 import torch  # NOTE: Apparently loading Torch and then sklearn causes a warning to be thrown up. The other way around does not.
 import plotly.express as px
 
-VAR_BASE_THRESH = 26
+VAR_BASE_THRESH = 10
 SOFT_BASE_TRHESH = 0.98
 ENERGY_BASE_THRESH = -7.5
-# DATASET = "Covertype"   # Or "*"
+DATASET = "Covertype"   # Or "*"
 # DATASET = "MNIST"
-DATASET = "Food101"
+# DATASET = "Food101"
 # DATASET = "FasionMNIST"
 ENERGY_TEMP = 1
 
@@ -44,7 +44,12 @@ def pandas_importing(path: str | os.PathLike = None) -> pd.DataFrame:
     return csv
 
 
-_roc_values_functions = {"Soft": lambda x: x.softmax(dim=1).max(dim=1)[0], "Softthresh": lambda x: x.softmax(dim=1).max(dim=1)[0], "Var": lambda x: x.var(dim=1), "Energy": lambda x: -(ENERGY_TEMP * torch.logsumexp(x / ENERGY_TEMP, dim=1))}
+def top2(x: torch.Tensor):
+    top = torch.topk(x.softmax(dim=1), 2, dim=1)[0]
+    return top[:, 0] - top[:, 1]
+
+
+_roc_values_functions = {"Soft": lambda x: x.softmax(dim=1).max(dim=1)[0], "Softthresh": lambda x: x.softmax(dim=1).max(dim=1)[0], "Var": lambda x: abs(x).var(dim=1), "Energy": lambda x: -(ENERGY_TEMP * torch.logsumexp(x / ENERGY_TEMP, dim=1)), "Top 2": lambda x: top2(x)}
 
 
 def get_SoftMax_F1(csv: pd.DataFrame = None, threshold=SOFT_BASE_TRHESH) -> float:
@@ -61,6 +66,10 @@ def get_VarMax_F1(csv: pd.DataFrame = None, threshold=VAR_BASE_THRESH) -> float:
 
 def get_Energy_F1(csv: pd.DataFrame = None, threshold=VAR_BASE_THRESH) -> float:
     return get_F1(version="Energy", csv=csv, threshold=threshold)
+
+
+def get_Top2_F1(csv: pd.DataFrame = None, threshold=0.5) -> float:
+    return get_F1(version="Top 2", csv=csv, threshold=threshold)
 
 
 def get_F1(version: str, csv: pd.DataFrame = None, threshold=0.5) -> float:
@@ -96,6 +105,10 @@ def get_k_uk_Energy_F1(csv: pd.DataFrame = None, threshold=ENERGY_BASE_THRESH) -
     return get_k_uk_F1(version="Energy", csv=csv, threshold=threshold)
 
 
+def get_k_uk_Top2_F1(csv: pd.DataFrame = None, threshold=0.5) -> float:
+    return get_k_uk_F1(version="Top 2", csv=csv, threshold=threshold)
+
+
 def get_k_uk_F1(version: str, csv: pd.DataFrame = None, threshold=0.5) -> tuple[float, float]:
     if csv is None:
         csv = pandas_importing()
@@ -116,7 +129,7 @@ def get_k_uk_F1(version: str, csv: pd.DataFrame = None, threshold=0.5) -> tuple[
     return knowns_f1, unknowns_f1
 
 
-def get_all_F1(csv: pd.DataFrame = None, threshold_keys={"Soft": 0, "Softthresh": SOFT_BASE_TRHESH, "Var": VAR_BASE_THRESH, "Energy": ENERGY_BASE_THRESH}, split_knowns_unknowns=False) -> pd.DataFrame:
+def get_all_F1(csv: pd.DataFrame = None, threshold_keys={"Soft": 0, "Softthresh": SOFT_BASE_TRHESH, "Var": VAR_BASE_THRESH, "Energy": ENERGY_BASE_THRESH, "Top 2": 0.5}, split_knowns_unknowns=False) -> pd.DataFrame:
     if csv is None:
         csv = pandas_importing()
     keys = list(threshold_keys.keys())
@@ -131,7 +144,7 @@ def get_all_F1(csv: pd.DataFrame = None, threshold_keys={"Soft": 0, "Softthresh"
 
 def get_average_F1(path: str | os.PathLike = None, n_samples: int = 3, threshold_keys=None) -> pd.DataFrame:
     if threshold_keys is None:
-        threshold_keys = {"Soft": 0, "Softthresh": SOFT_BASE_TRHESH, "Var": VAR_BASE_THRESH, "Energy": ENERGY_BASE_THRESH}
+        threshold_keys = {"Soft": 0, "Softthresh": SOFT_BASE_TRHESH, "Var": VAR_BASE_THRESH, "Energy": ENERGY_BASE_THRESH, "Top 2": 0.5}
     f1s = pd.DataFrame([], columns=threshold_keys.keys())
     for x in range(n_samples):
         try:
@@ -143,17 +156,18 @@ def get_average_F1(path: str | os.PathLike = None, n_samples: int = 3, threshold
             break
 
     print(f1s)
-    soft_mean = f1s["Soft"].mean()
-    soft_thresh_mean = f1s["Softthresh"].mean()
-    var_mean = f1s["Var"].mean()
-    energy_mean = f1s["Energy"].mean()
-    print(f"Soft Mean: {soft_mean:0.3f}, Soft Threshold Mean: {soft_thresh_mean:0.3f}, Var Mean: {var_mean:0.3f}, Energy Mean: {energy_mean:0.3f}")
+    # soft_mean = f1s["Soft"].mean()
+    # soft_thresh_mean = f1s["Softthresh"].mean()
+    # var_mean = f1s["Var"].mean()
+    # energy_mean = f1s["Energy"].mean()
+    # print(f"Soft Mean: {soft_mean:0.3f}, Soft Threshold Mean: {soft_thresh_mean:0.3f}, Var Mean: {var_mean:0.3f}, Energy Mean: {energy_mean:0.3f}")
+    print(*[f"{k} Mean: {f1s[k].mean():0.4f}" for k in threshold_keys.keys()])
     return f1s
 
 
 def get_average_k_uk_F1(path: str | os.PathLike = None, n_samples: int = 3, threshold_keys=None) -> pd.DataFrame:
     if threshold_keys is None:
-        threshold_keys = {"Soft": 0, "Softthresh": SOFT_BASE_TRHESH, "Var": VAR_BASE_THRESH, "Energy": ENERGY_BASE_THRESH}
+        threshold_keys = {"Soft": 0, "Softthresh": SOFT_BASE_TRHESH, "Var": VAR_BASE_THRESH, "Energy": ENERGY_BASE_THRESH, "Top 2": 0.5}
     f1s = pd.DataFrame([], columns=list(threshold_keys.keys()) + ["known"])
     for x in range(n_samples):
         try:
@@ -165,11 +179,12 @@ def get_average_k_uk_F1(path: str | os.PathLike = None, n_samples: int = 3, thre
             break
 
     print(f1s)
-    soft_mean = f1s["Soft"][f1s["known"]].mean(), f1s["Soft"][f1s["known"] != True].mean()
-    soft_thresh_mean = f1s["Softthresh"][f1s["known"]].mean(), f1s["Softthresh"][f1s["known"] != True].mean()
-    var_mean = f1s["Var"][f1s["known"]].mean(), f1s["Var"][f1s["known"] != True].mean()
-    energy_mean = f1s["Energy"][f1s["known"]].mean(), f1s["Energy"][f1s["known"] != True].mean()
-    print(f"Soft Mean: {soft_mean[0]:0.3f}|{soft_mean[1]:0.3f}, Soft thresh Mean: {soft_thresh_mean[0]:0.3f}|{soft_thresh_mean[1]:0.3f}, Var Mean: {var_mean[0]:0.3f}|{var_mean[1]:0.3f}, Energy Mean: {energy_mean[0]:0.3f}|{energy_mean[1]:0.3f}")
+    # soft_mean = f1s["Soft"][f1s["known"]].mean(), f1s["Soft"][f1s["known"] != True].mean()
+    # soft_thresh_mean = f1s["Softthresh"][f1s["known"]].mean(), f1s["Softthresh"][f1s["known"] != True].mean()
+    # var_mean = f1s["Var"][f1s["known"]].mean(), f1s["Var"][f1s["known"] != True].mean()
+    # energy_mean = f1s["Energy"][f1s["known"]].mean(), f1s["Energy"][f1s["known"] != True].mean()
+    # print(f"Soft Mean: {soft_mean[0]:0.3f}|{soft_mean[1]:0.3f}, Soft thresh Mean: {soft_thresh_mean[0]:0.3f}|{soft_thresh_mean[1]:0.3f}, Var Mean: {var_mean[0]:0.3f}|{var_mean[1]:0.3f}, Energy Mean: {energy_mean[0]:0.3f}|{energy_mean[1]:0.3f}")
+    print(*[f"{k} Mean: {f1s[k][f1s['known']].mean():0.4f}|{f1s[k][~f1s['known'].astype(bool)].mean():0.4f}" for k in threshold_keys.keys()])
     return f1s
 
 
@@ -183,6 +198,10 @@ def get_ROC_var(src_pth: str | os.PathLike = None, dst_pth: str | os.PathLike = 
 
 def get_ROC_energy(src_pth: str | os.PathLike = None, dst_pth: str | os.PathLike = None) -> pd.DataFrame:
     return get_ROC(version="Energy", src_pth=src_pth, dst_pth=dst_pth)
+
+
+def get_ROC_top2(src_pth: str | os.PathLike = None, dst_pth: str | os.PathLike = None) -> pd.DataFrame:
+    return get_ROC(version="Top 2", src_pth=src_pth, dst_pth=dst_pth)
 
 
 def get_ROC(version: str, src_pth: str | os.PathLike = None, dst_pth: str | os.PathLike = None) -> pd.DataFrame:
@@ -199,7 +218,7 @@ def get_ROC(version: str, src_pth: str | os.PathLike = None, dst_pth: str | os.P
     mx = _roc_values_functions[version](tense)
     labels = csv.iloc[:, -1] == -1
     roc = pd.DataFrame(roc_curve(labels, mx, pos_label=True))
-    roc.to_csv(os.path.join(dst_pth, f"{version}maxROC.csv"))
+    roc.to_csv(os.path.join(dst_pth, f"{version}ROC.csv"))
     return roc
 
 
@@ -358,10 +377,21 @@ if __name__ == "__main__":
     # graph_ROC("Soft")
     # graph_ROC("Var")
     # graph_ROC("Energy")
+    # graph_ROC("Top 2")
     # print("Done!")
     threshold_keys = None
-    # threshold_keys = {"Soft": 0, "Softthresh": find_threshold_a("Softthresh"), "Var": find_threshold_a("Var"), "Energy": find_threshold_a("Energy")}
-    # threshold_keys = {"Soft": 0, "Softthresh": find_threshold_b("Softthresh"), "Var": find_threshold_b("Var"), "Energy": find_threshold_b("Energy")}
-    threshold_keys = {"Soft": 0, "Softthresh": find_threshold_c("Softthresh"), "Var": find_threshold_c("Var"), "Energy": find_threshold_c("Energy")}
-    get_average_F1(threshold_keys=threshold_keys)
-    get_average_k_uk_F1(threshold_keys=threshold_keys)
+    # threshold_keys = {"Soft": 0, "Softthresh": find_threshold_a("Softthresh"), "Var": find_threshold_a("Var"), "Energy": find_threshold_a("Energy"), "Top 2": find_threshold_a("Top 2")}
+    # threshold_keys = {"Soft": 0, "Softthresh": find_threshold_b("Softthresh"), "Var": find_threshold_b("Var"), "Energy": find_threshold_b("Energy"), "Top 2": find_threshold_b("Top 2")}
+    # threshold_keys = {"Soft": 0, "Softthresh": find_threshold_c("Softthresh"), "Var": find_threshold_c("Var"), "Energy": find_threshold_c("Energy"), "Top 2": find_threshold_c("Top 2")}
+
+    # get_average_F1(threshold_keys=threshold_keys)
+    # get_average_k_uk_F1(threshold_keys=threshold_keys)
+
+    for x in zip([None, find_threshold_a, find_threshold_b, find_threshold_c], ["Manual", "A", "B", "C"]):
+        threshold_keys = {"Soft": 0, "Var": x[0]("Var"), "Energy": x[0]("Energy")} if x[0] is not None else None
+        print(f"{DATASET}, {x[1]}")
+        get_average_F1(threshold_keys=threshold_keys)
+
+    # for x in ["Covertype", "MNIST", "Food101", "FasionMNIST"]:
+    #     DATASET = x
+        # get_average_k_uk_F1(threshold_keys=None)

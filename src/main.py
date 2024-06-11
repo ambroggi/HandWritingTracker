@@ -101,7 +101,7 @@ if __name__ == "__main__":
     buildCSV = args.buildCSV
     plotResults = args.plotResults
     overrideExit = args.overrideExit
-    unknownclasses = [2, 3, 4]
+    unknownclasses = [1, 3, 4]
 
     if dataset in ["Covertype"]:
         plotResults = False
