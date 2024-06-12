@@ -340,14 +340,14 @@ class Random_data():
     def get_unknown(self):
 
         datset = torchvision.datasets.FakeData(
-            num_classes=10-self.classcount,
+            num_classes=10 - self.classcount,
             size=1000,
             transform=transforms.Compose(
                 [transforms.Grayscale(num_output_channels=self.channels), transforms.ToImage(), transforms.ToDtype(torch.float32, scale=True)]
             ),
         )
 
-        datset.classes = {x: x for x in range(10-self.classcount)}
+        datset.classes = {x: x for x in range(10 - self.classcount)}
 
         return datset
 
@@ -377,7 +377,7 @@ class Covertype():
 
         # data (as pandas dataframes)
         self.X = torch.tensor(covertype.data.features.to_numpy(), dtype=torch.float32)
-        self.y = torch.tensor(covertype.data.targets.to_numpy()).squeeze(dim=-1).apply_(lambda x: x-1)
+        self.y = torch.tensor(covertype.data.targets.to_numpy()).squeeze(dim=-1).apply_(lambda x: x - 1)
 
         print(min(self.y))
         print(max(self.y))
@@ -413,7 +413,7 @@ class Covertype():
         hf.filter_class_idx(train, unknown_classes)
         print(train.targets.bincount())
 
-        self.train, self.val = torch.utils.data.random_split(train, [3*len(train)//4, len(train)-3*len(train)//4])
+        self.train, self.val = torch.utils.data.random_split(train, [3 * len(train) // 4, len(train) - (3 * len(train) // 4)])
         self.train.classes = train.classes
         self.val.classes = train.classes
 

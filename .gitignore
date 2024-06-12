@@ -531,6 +531,8 @@ runs/Flowers102/*
 runs/FasionMNIST/*
 runs/Random/*
 runs/Covertype/*
+runs/CovertypeChanging Unknowns/*
+runs/MNIST_old_data/*
 .DS_Store
 
 !runs/MNIST/2024_05_23_19_36_57_613770

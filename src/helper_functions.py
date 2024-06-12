@@ -208,7 +208,7 @@ def target_remaping(dataset: torch.utils.data.Dataset, classes: list[int] = []):
     move_to_back = classes
 
     mapping_ = {y: x for x, y in enumerate(move_to_front)}
-    mapping_.update({y: x+len(mapping_) for x, y in enumerate(move_to_back)})
+    mapping_.update({y: x + len(mapping_) for x, y in enumerate(move_to_back)})
     dataset.true_names_mapping = {mapping_[x]: x for x in mapping_.keys()}
     dataset.targets.apply_(lambda x: mapping_[x])
 
@@ -219,7 +219,4 @@ def target_remaping(dataset: torch.utils.data.Dataset, classes: list[int] = []):
 
 # https://discuss.pytorch.org/t/dataloader-error-trying-to-resize-storage-that-is-not-resizable/177584/2
 def collate_fn(batch):
-    return {
-      'pixel_values': torch.stack([x['pixel_values'] for x in batch]),
-      'labels': torch.tensor([x['labels'] for x in batch])
-    }
+    return {'pixel_values': torch.stack([x['pixel_values'] for x in batch]), 'labels': torch.tensor([x['labels'] for x in batch])}

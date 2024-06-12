@@ -85,7 +85,7 @@ def get_F1(version: str, csv: pd.DataFrame = None, threshold=0.5) -> float:
         unknowns = _roc_values_functions[version](tense).greater(threshold)
     prediction[unknowns] = -1
     f1 = f1_score(csv.iloc[:, -1], prediction.numpy(), average="weighted")
-    print(f"{version}max F1: {f1}")
+    # print(f"{version}max F1: {f1}")
     return f1
 
 
@@ -149,19 +149,23 @@ def get_average_F1(path: str | os.PathLike = None, n_samples: int = 3, threshold
     for x in range(n_samples):
         try:
             pth = get_latest_file(n_th_latest=x)
-            f1s = pd.concat([f1s, get_all_F1(pandas_importing(pth), threshold_keys=threshold_keys)])
+            if len(f1s) != 0:
+                f1s = pd.concat([f1s, get_all_F1(pandas_importing(pth), threshold_keys=threshold_keys)])
+            else:
+                f1s = get_all_F1(pandas_importing(pth), threshold_keys=threshold_keys)
         except FileNotFoundError as e:
             e
             print("Could not find all files.")
             break
 
-    print(f1s)
+    # print(f1s)
+
     # soft_mean = f1s["Soft"].mean()
     # soft_thresh_mean = f1s["Softthresh"].mean()
     # var_mean = f1s["Var"].mean()
     # energy_mean = f1s["Energy"].mean()
     # print(f"Soft Mean: {soft_mean:0.3f}, Soft Threshold Mean: {soft_thresh_mean:0.3f}, Var Mean: {var_mean:0.3f}, Energy Mean: {energy_mean:0.3f}")
-    print(*[f"{k} Mean: {f1s[k].mean():0.4f}" for k in threshold_keys.keys()])
+    print(*[f"{k} Mean: {f1s[k].mean():0.4f}, " for k in threshold_keys.keys()])
     return f1s
 
 
@@ -172,19 +176,23 @@ def get_average_k_uk_F1(path: str | os.PathLike = None, n_samples: int = 3, thre
     for x in range(n_samples):
         try:
             pth = get_latest_file(n_th_latest=x)
-            f1s = pd.concat([f1s, get_all_F1(pandas_importing(pth), split_knowns_unknowns=True, threshold_keys=threshold_keys)])
+            if len(f1s) != 0:
+                f1s = pd.concat([f1s, get_all_F1(pandas_importing(pth), split_knowns_unknowns=True, threshold_keys=threshold_keys)])
+            else:
+                f1s = get_all_F1(pandas_importing(pth), split_knowns_unknowns=True, threshold_keys=threshold_keys)
         except FileNotFoundError as e:
             e
             print("Could not find all files.")
             break
 
-    print(f1s)
+    # print(f1s)
+
     # soft_mean = f1s["Soft"][f1s["known"]].mean(), f1s["Soft"][f1s["known"] != True].mean()
     # soft_thresh_mean = f1s["Softthresh"][f1s["known"]].mean(), f1s["Softthresh"][f1s["known"] != True].mean()
     # var_mean = f1s["Var"][f1s["known"]].mean(), f1s["Var"][f1s["known"] != True].mean()
     # energy_mean = f1s["Energy"][f1s["known"]].mean(), f1s["Energy"][f1s["known"] != True].mean()
     # print(f"Soft Mean: {soft_mean[0]:0.3f}|{soft_mean[1]:0.3f}, Soft thresh Mean: {soft_thresh_mean[0]:0.3f}|{soft_thresh_mean[1]:0.3f}, Var Mean: {var_mean[0]:0.3f}|{var_mean[1]:0.3f}, Energy Mean: {energy_mean[0]:0.3f}|{energy_mean[1]:0.3f}")
-    print(*[f"{k} Mean: {f1s[k][f1s['known']].mean():0.4f}|{f1s[k][~f1s['known'].astype(bool)].mean():0.4f}" for k in threshold_keys.keys()])
+    print(*[f"{k} Mean: {f1s[k][f1s['known']].mean():0.4f}|{f1s[k][~f1s['known'].astype(bool)].mean():0.4f}, " for k in threshold_keys.keys()])
     return f1s
 
 
@@ -234,6 +242,8 @@ def graph_ROC(version: str, pth: str | os.PathLike = None):
     mx = _roc_values_functions[version](tense)
     recall = []
     f1 = []
+    f1_k = []
+    f1_u = []
 
     # All from: https://plotly.com/python/roc-and-pr-curves/
     fpr, tpr, thresholds = roc_curve(csv.iloc[:, -1], mx, pos_label=True)
@@ -247,11 +257,14 @@ def graph_ROC(version: str, pth: str | os.PathLike = None):
         prediction[unknowns] = -1
         recall.append(recall_score(csv.iloc[:, -1], prediction.numpy(), average="weighted"))
         f1.append(f1_score(csv.iloc[:, -1], prediction.numpy(), average="weighted"))
+        k, u = get_k_uk_F1(version=version, csv=csv, threshold=t)
+        f1_k.append(k)
+        f1_u.append(u)
 
     # The histogram of scores compared to true labels
     fig_hist = px.histogram(
         x=mx, color=csv.iloc[:, -1], nbins=50,
-        labels=dict(color='True Labels', x='Score'), title=f"Bins for {version}"
+        labels=dict(color='True Labels', x='Score'), title=f"Bins for {version} on {DATASET}"
     )
 
     fig_hist.show()
@@ -261,13 +274,15 @@ def graph_ROC(version: str, pth: str | os.PathLike = None):
         'False Positive Rate': fpr,
         'True Positive Rate': tpr,
         "Recall": recall,
-        "F1": f1
+        "F1": f1,
+        "F1 Knowns": f1_k,
+        "F1 Unknowns": f1_u
     }, index=thresholds)
     df.index.name = "Thresholds"
     df.columns.name = "Rate"
 
     fig_thresh = px.line(
-        df, title=f'{version}- TPR and FPR at every threshold',
+        df, title=f'{version} at {DATASET}- TPR and FPR at every threshold',
         width=700, height=500
     )
 
@@ -387,11 +402,14 @@ if __name__ == "__main__":
     # get_average_F1(threshold_keys=threshold_keys)
     # get_average_k_uk_F1(threshold_keys=threshold_keys)
 
-    for x in zip([None, find_threshold_a, find_threshold_b, find_threshold_c], ["Manual", "A", "B", "C"]):
-        threshold_keys = {"Soft": 0, "Var": x[0]("Var"), "Energy": x[0]("Energy")} if x[0] is not None else None
-        print(f"{DATASET}, {x[1]}")
-        get_average_F1(threshold_keys=threshold_keys)
+    # for x in zip([None, find_threshold_a, find_threshold_b, find_threshold_c], ["Manual", "A", "B", "C"]):
+    #     threshold_keys = {"Soft": 0, "Var": x[0]("Var"), "Energy": x[0]("Energy")} if x[0] is not None else None
+    #     print(f"{DATASET}, {x[1]}")
+    #     print(f"Thresholds: {threshold_keys}")
+    #     get_average_F1(threshold_keys=threshold_keys)
+    #     get_average_k_uk_F1(threshold_keys=threshold_keys)
 
-    # for x in ["Covertype", "MNIST", "Food101", "FasionMNIST"]:
-    #     DATASET = x
-        # get_average_k_uk_F1(threshold_keys=None)
+    for x in ["Covertype", "MNIST", "Food101", "FasionMNIST"]:
+        DATASET = x
+        graph_ROC(version="Energy")
+        graph_ROC(version="Var")
