@@ -4,12 +4,13 @@ import pandas as pd
 from sklearn.metrics import f1_score, roc_curve, recall_score
 import torch  # NOTE: Apparently loading Torch and then sklearn causes a warning to be thrown up. The other way around does not.
 import plotly.express as px
+import numpy as np
 
 VAR_BASE_THRESH = 10
 SOFT_BASE_TRHESH = 0.98
 ENERGY_BASE_THRESH = -7.5
-DATASET = "Covertype"   # Or "*"
-# DATASET = "MNIST"
+# DATASET = "Covertype"   # Or "*"
+DATASET = "MNIST"
 # DATASET = "Food101"
 # DATASET = "FasionMNIST"
 ENERGY_TEMP = 1
@@ -44,9 +45,26 @@ def pandas_importing(path: str | os.PathLike = None) -> pd.DataFrame:
     return csv
 
 
+def pandas_multi_import(count=3):
+    csvs = []
+    for x in range(count):
+        src_pth = get_latest_folder(n_th_latest=x)
+
+        if ".csv" not in src_pth:
+            csvs.append(pandas_importing(os.path.join(src_pth, "results", "logits.csv")))
+        else:
+            csvs.append(pandas_importing(src_pth))
+
+    csvs = pd.concat(csvs)
+    return csvs
+
+
 def top2(x: torch.Tensor):
     top = torch.topk(x.softmax(dim=1), 2, dim=1)[0]
     return top[:, 0] - top[:, 1]
+
+
+# def var2(x: torch.Tensor):
 
 
 _roc_values_functions = {"Soft": lambda x: x.softmax(dim=1).max(dim=1)[0], "Softthresh": lambda x: x.softmax(dim=1).max(dim=1)[0], "Var": lambda x: abs(x).var(dim=1), "Energy": lambda x: -(ENERGY_TEMP * torch.logsumexp(x / ENERGY_TEMP, dim=1)), "Top 2": lambda x: top2(x)}
@@ -232,11 +250,12 @@ def get_ROC(version: str, src_pth: str | os.PathLike = None, dst_pth: str | os.P
 
 def graph_ROC(version: str, pth: str | os.PathLike = None):
     if pth is None:
-        pth = get_latest_folder()
-    if ".csv" not in pth:
-        csv = pandas_importing(os.path.join(pth, "results", "logits.csv"))
+        csv = pandas_multi_import()
     else:
-        csv = pandas_importing(pth)
+        if ".csv" not in pth:
+            csv = pandas_importing(os.path.join(pth, "results", "logits.csv"))
+        else:
+            csv = pandas_importing(pth)
 
     tense = torch.tensor(csv.iloc[:, :-1].to_numpy())
     mx = _roc_values_functions[version](tense)
@@ -286,20 +305,29 @@ def graph_ROC(version: str, pth: str | os.PathLike = None):
         width=700, height=500
     )
 
+    print(f"{version} at {DATASET}- average f1: {float(np.array(evenSpaced(f1)).mean()):0.3f}, {float(np.array(evenSpaced(f1_k)).mean()):0.3f}|{float(np.array(evenSpaced(f1_u)).mean()):0.3f}")
+
     # fig_thresh.update_yaxes(scaleanchor="x", scaleratio=1)
     # fig_thresh.update_xaxes(range=[0, 1], constrain='domain')
     fig_thresh.show()
 
 
+def evenSpaced(x, n=31):
+    # https://stackoverflow.com/a/73926974
+    a = x[::int(np.ceil(len(x) / n))]
+    return a
+
+
 def find_threshold_a(version: str, src_pth: str | os.PathLike = None, dst_pth: str | os.PathLike = None) -> float:
     if src_pth is None:
-        src_pth = get_latest_folder()
+        csv = pandas_multi_import()
+    else:
+        if ".csv" not in src_pth:
+            csv = pandas_importing(os.path.join(src_pth, "results", "logits.csv"))
+        else:
+            csv = pandas_importing(src_pth)
     if dst_pth is None:
         dst_pth = src_pth
-    if ".csv" not in src_pth:
-        csv = pandas_importing(os.path.join(src_pth, "results", "logits.csv"))
-    else:
-        csv = pandas_importing(src_pth)
 
     tense = torch.tensor(csv.iloc[:, :-1].to_numpy())
     mx = _roc_values_functions[version](tense)
@@ -320,13 +348,14 @@ def find_threshold_a(version: str, src_pth: str | os.PathLike = None, dst_pth: s
 
 def find_threshold_b(version: str, src_pth: str | os.PathLike = None, dst_pth: str | os.PathLike = None) -> float:
     if src_pth is None:
-        src_pth = get_latest_folder()
+        csv = pandas_multi_import()
+    else:
+        if ".csv" not in src_pth:
+            csv = pandas_importing(os.path.join(src_pth, "results", "logits.csv"))
+        else:
+            csv = pandas_importing(src_pth)
     if dst_pth is None:
         dst_pth = src_pth
-    if ".csv" not in src_pth:
-        csv = pandas_importing(os.path.join(src_pth, "results", "logits.csv"))
-    else:
-        csv = pandas_importing(src_pth)
 
     tense = torch.tensor(csv.iloc[:, :-1].to_numpy())
     mx = _roc_values_functions[version](tense)
@@ -353,13 +382,14 @@ def find_threshold_b(version: str, src_pth: str | os.PathLike = None, dst_pth: s
 
 def find_threshold_c(version: str, src_pth: str | os.PathLike = None, dst_pth: str | os.PathLike = None) -> float:
     if src_pth is None:
-        src_pth = get_latest_folder()
+        csv = pandas_multi_import()
+    else:
+        if ".csv" not in src_pth:
+            csv = pandas_importing(os.path.join(src_pth, "results", "logits.csv"))
+        else:
+            csv = pandas_importing(src_pth)
     if dst_pth is None:
         dst_pth = src_pth
-    if ".csv" not in src_pth:
-        csv = pandas_importing(os.path.join(src_pth, "results", "logits.csv"))
-    else:
-        csv = pandas_importing(src_pth)
 
     tense = torch.tensor(csv.iloc[:, :-1].to_numpy())
     mx = _roc_values_functions[version](tense)
@@ -384,14 +414,40 @@ def find_threshold_c(version: str, src_pth: str | os.PathLike = None, dst_pth: s
     return selected_threshold
 
 
+def find_threshold_d(version: str, src_pth: str | os.PathLike = None, dst_pth: str | os.PathLike = None) -> float:
+    if src_pth is None:
+        csv = pandas_multi_import()
+    else:
+        if ".csv" not in src_pth:
+            csv = pandas_importing(os.path.join(src_pth, "results", "logits.csv"))
+        else:
+            csv = pandas_importing(src_pth)
+    if dst_pth is None:
+        dst_pth = src_pth
+
+    tense = torch.tensor(csv.iloc[:, :-1].to_numpy())
+    mx = _roc_values_functions[version](tense)
+    labels = csv.iloc[:, -1] == -1
+    # roc = roc_curve(labels, mx, pos_label=True if version != "Energy" else False)
+    roc = roc_curve(labels, mx, pos_label=True)
+
+    selected_threshold = 0
+    for tpr, fpr, threshold in zip(*roc):
+        if tpr > 0.8:
+            break
+        selected_threshold = threshold
+
+    return selected_threshold
+
+
 if __name__ == "__main__":
     # get_average_F1()
     # get_average_k_uk_F1()
     # # get_ROC_soft()
     # # get_ROC_var()
     # graph_ROC("Soft")
-    # graph_ROC("Var")
-    # graph_ROC("Energy")
+    graph_ROC("Var")
+    graph_ROC("Energy")
     # graph_ROC("Top 2")
     # print("Done!")
     threshold_keys = None
@@ -399,9 +455,9 @@ if __name__ == "__main__":
     # threshold_keys = {"Soft": 0, "Softthresh": find_threshold_b("Softthresh"), "Var": find_threshold_b("Var"), "Energy": find_threshold_b("Energy"), "Top 2": find_threshold_b("Top 2")}
     # threshold_keys = {"Soft": 0, "Softthresh": find_threshold_c("Softthresh"), "Var": find_threshold_c("Var"), "Energy": find_threshold_c("Energy"), "Top 2": find_threshold_c("Top 2")}
 
-    # get_average_F1(threshold_keys=threshold_keys)
     # get_average_k_uk_F1(threshold_keys=threshold_keys)
-
+    # get_average_F1(threshold_keys=threshold_keys)
+    
     # for x in zip([None, find_threshold_a, find_threshold_b, find_threshold_c], ["Manual", "A", "B", "C"]):
     #     threshold_keys = {"Soft": 0, "Var": x[0]("Var"), "Energy": x[0]("Energy")} if x[0] is not None else None
     #     print(f"{DATASET}, {x[1]}")
@@ -409,7 +465,15 @@ if __name__ == "__main__":
     #     get_average_F1(threshold_keys=threshold_keys)
     #     get_average_k_uk_F1(threshold_keys=threshold_keys)
 
-    for x in ["Covertype", "MNIST", "Food101", "FasionMNIST"]:
-        DATASET = x
-        graph_ROC(version="Energy")
-        graph_ROC(version="Var")
+    # for x in ["Covertype", "MNIST", "Food101", "FasionMNIST"]:
+    #     DATASET = x
+    # #     graph_ROC(version="Energy")
+    # #     graph_ROC(version="Var")
+
+    # for x in ["Covertype", "MNIST", "Food101", "FasionMNIST"]:
+    #     DATASET = x
+    #     threshold_keys = {"Soft": 0, "Var": find_threshold_a("Var"), "Energy": find_threshold_a("Energy")}
+    #     print(f"{DATASET}, {'E'}")
+    #     print(f"Thresholds: {threshold_keys}")
+    #     get_average_k_uk_F1(threshold_keys=threshold_keys)
+    #     get_average_F1(threshold_keys=threshold_keys)
