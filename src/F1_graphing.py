@@ -10,9 +10,10 @@ VAR_BASE_THRESH = 10
 SOFT_BASE_TRHESH = 0.98
 ENERGY_BASE_THRESH = -7.5
 # DATASET = "Covertype"   # Or "*"
-DATASET = "MNIST"
+# DATASET = "MNIST"
 # DATASET = "Food101"
 # DATASET = "FasionMNIST"
+DATASET = "CICIDS"
 ENERGY_TEMP = 1
 
 
@@ -28,6 +29,8 @@ def get_latest_folder(n_th_latest=None, dataset=None) -> str:
 
 
 def get_latest_file(n_th_latest=None) -> str:
+    if DATASET == "CICIDS":
+        return "runs/CICIDS/items2,3,13,14 as unknowns MPC100 (2).csv"
     latest_folder = get_latest_folder(n_th_latest)
     pth = os.path.join(latest_folder, "results", "logits.csv")
     return pth
@@ -40,12 +43,16 @@ def pandas_importing(path: str | os.PathLike = None) -> pd.DataFrame:
     with open(path) as f:
         number_of_logits = f.readline().count(",")
     column_names = [x for x in range(number_of_logits)] + ["True Class"]
-    csv = pd.read_csv(path, header=None, names=column_names)
+    column_types = {x: float for x in range(number_of_logits)}
+    column_types.update({"True Class": int})
+    csv = pd.read_csv(path, header=None, names=column_names, dtype=column_types)
     # print(csv.head())
     return csv
 
 
 def pandas_multi_import(count=3):
+    if DATASET == "CICIDS":
+        return pandas_importing(os.path.join("runs/CICIDS/items2,3,13,14 as unknowns MPC100 (2).csv"))
     csvs = []
     for x in range(count):
         src_pth = get_latest_folder(n_th_latest=x)
@@ -446,8 +453,8 @@ if __name__ == "__main__":
     # # get_ROC_soft()
     # # get_ROC_var()
     # graph_ROC("Soft")
-    graph_ROC("Var")
-    graph_ROC("Energy")
+    # graph_ROC("Var")
+    # graph_ROC("Energy")
     # graph_ROC("Top 2")
     # print("Done!")
     threshold_keys = None
@@ -458,12 +465,12 @@ if __name__ == "__main__":
     # get_average_k_uk_F1(threshold_keys=threshold_keys)
     # get_average_F1(threshold_keys=threshold_keys)
     
-    # for x in zip([None, find_threshold_a, find_threshold_b, find_threshold_c], ["Manual", "A", "B", "C"]):
-    #     threshold_keys = {"Soft": 0, "Var": x[0]("Var"), "Energy": x[0]("Energy")} if x[0] is not None else None
-    #     print(f"{DATASET}, {x[1]}")
-    #     print(f"Thresholds: {threshold_keys}")
-    #     get_average_F1(threshold_keys=threshold_keys)
-    #     get_average_k_uk_F1(threshold_keys=threshold_keys)
+    for x in zip([None, find_threshold_a, find_threshold_b, find_threshold_c], ["Manual", "A", "B", "C"]):
+        threshold_keys = {"Soft": 0, "Var": x[0]("Var"), "Energy": x[0]("Energy")} if x[0] is not None else None
+        print(f"{DATASET}, {x[1]}")
+        print(f"Thresholds: {threshold_keys}")
+        get_average_F1(threshold_keys=threshold_keys)
+        get_average_k_uk_F1(threshold_keys=threshold_keys)
 
     # for x in ["Covertype", "MNIST", "Food101", "FasionMNIST"]:
     #     DATASET = x
