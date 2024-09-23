@@ -31,7 +31,7 @@ Once Data is generated it can then be evaluated using `src/F1_graphing`. It trie
 "NameOfDataset", "TypeOfThreshold"
 Thresholds: "dictionary of threshold values"
 "Type" Mean: "F1 score"   (Once per type being run)
-"Type" Mean: "Known-F1 score"\|"Unkown-F1 score"  (Once per type being run)
+"Type" Mean: "Known-F1 score"\|"Unknown-F1 score"  (Once per type being run)
 ```
 
 The meanings are as follows:
@@ -40,12 +40,12 @@ The meanings are as follows:
     * None - This means that the default thresholds are being used, we tried to pick good values for the thresholds but they may be biased.
     * A - This method is using the ROC score of the data to find the best possible threshold. Specifically it is looking for the true positive rate to be 80% of the total recall if you were using Softmax
     * B - This is just looking for the maximum recall score as it progresses along the points in the ROC graph. The ROC graph is used because it shows the possible important threshold points. But this is slow due to there being a lot of possible points.
-    * C - This is looiking for the maximum F1 score along the ROC graph points. As such it probably does the best but takes a long time.
+    * C - This is looking for the maximum F1 score along the ROC graph points. As such it probably does the best but takes a long time.
   * "dictionary of threshold values" - This is a dictionary that contains all of the thresholds that the "TypeOfThreshold" found. Values above these thresholds are considered to be known/unknown depending on the algorithm. Soft is always zero due to the definition that it never classifies anything as unknown.
   * "Type" - This lists the type of the algorithm being used. 
-  * "F1 score" - The F1 score, from 0 to 1, of all of the data weighted based on the number of appearences of a given class.
+  * "F1 score" - The F1 score, from 0 to 1, of all of the data weighted based on the number of appearances of a given class.
   * "Known-F1 score" - This is the F1 score when the data is filtered to be only known classes. That is classes that have appeared in the training dataset.
-  * "Unkown-F1 score" - This is the F1 score when the data is filtered to only be the unknown classes. That is the classes that have only appeared during the testing phases.
+  * "Unknown-F1 score" - This is the F1 score when the data is filtered to only be the unknown classes. That is the classes that have only appeared during the testing phases.
 
 These values were then copied into Excel sheets for graphing. We did not use a python based graphing library because we wanted to be able to check the underlying data of each graph which was not easy to do with code generated graphs. 
 
@@ -57,4 +57,6 @@ Note: Energy scores work the opposite way from the other scores so we often need
 
 
 # Other Information
-There were some other possible threshold selection methods, d and e but they were not fully planned out for the paper. Also all of the graphs made for the paper are avalible with data in the `Excel/` folder. 
+There were some other possible threshold selection methods, d and e but they were not fully planned out for the paper. Also all of the graphs made for the paper are available with data in the `Excel/` folder. 
+
+The CICIDS data was generated from a different project and brought over for analysis here so it cannot be rerun using this library.
