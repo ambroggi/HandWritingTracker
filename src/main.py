@@ -4,8 +4,6 @@ if __name__ == "__main__":
     import model as m
     import model_functions as mf
     import select_dataset
-    # import os
-    # import process_test_images as pti
     import torch
 
     # Set up argument parser
@@ -73,13 +71,6 @@ if __name__ == "__main__":
         required=False,
         action="store_true",  # default false
     )
-    # parser.add_argument(
-    #     "-u",
-    #     "--unknownclasses",
-    #     help="list of all index number of unknown classes",
-    #     required=False,
-    #     default=""
-    # )
     parser.add_argument(
         "-d",
         "--dataset",

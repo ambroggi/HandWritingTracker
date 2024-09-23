@@ -5,6 +5,7 @@ from sklearn.metrics import f1_score, roc_curve, recall_score
 import torch  # NOTE: Apparently loading Torch and then sklearn causes a warning to be thrown up. The other way around does not.
 import plotly.express as px
 import numpy as np
+import argparse
 
 VAR_BASE_THRESH = 10
 SOFT_BASE_TRHESH = 0.98
@@ -15,6 +16,22 @@ ENERGY_BASE_THRESH = -7.5
 # DATASET = "FasionMNIST"
 DATASET = "CICIDS"
 ENERGY_TEMP = 1
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Argument Parser")
+    parser.add_argument(
+        "-d",
+        "--dataset",
+        help="what dataset to graph",
+        required=False,
+        default="MNIST",
+        choices=["MNIST", "Flowers102", "Food101", "FasionMNIST", "Random", "Covertype", "CICIDS"]
+    )
+
+    args = parser.parse_args()
+
+    DATASET = args.dataset
 
 
 def get_latest_folder(n_th_latest=None, dataset=None) -> str:
@@ -448,23 +465,8 @@ def find_threshold_d(version: str, src_pth: str | os.PathLike = None, dst_pth: s
 
 
 if __name__ == "__main__":
-    # get_average_F1()
-    # get_average_k_uk_F1()
-    # # get_ROC_soft()
-    # # get_ROC_var()
-    # graph_ROC("Soft")
-    # graph_ROC("Var")
-    # graph_ROC("Energy")
-    # graph_ROC("Top 2")
-    # print("Done!")
     threshold_keys = None
-    # threshold_keys = {"Soft": 0, "Softthresh": find_threshold_a("Softthresh"), "Var": find_threshold_a("Var"), "Energy": find_threshold_a("Energy"), "Top 2": find_threshold_a("Top 2")}
-    # threshold_keys = {"Soft": 0, "Softthresh": find_threshold_b("Softthresh"), "Var": find_threshold_b("Var"), "Energy": find_threshold_b("Energy"), "Top 2": find_threshold_b("Top 2")}
-    # threshold_keys = {"Soft": 0, "Softthresh": find_threshold_c("Softthresh"), "Var": find_threshold_c("Var"), "Energy": find_threshold_c("Energy"), "Top 2": find_threshold_c("Top 2")}
 
-    # get_average_k_uk_F1(threshold_keys=threshold_keys)
-    # get_average_F1(threshold_keys=threshold_keys)
-    
     for x in zip([None, find_threshold_a, find_threshold_b, find_threshold_c], ["Manual", "A", "B", "C"]):
         threshold_keys = {"Soft": 0, "Var": x[0]("Var"), "Energy": x[0]("Energy")} if x[0] is not None else None
         print(f"{DATASET}, {x[1]}")
@@ -476,11 +478,3 @@ if __name__ == "__main__":
     #     DATASET = x
     # #     graph_ROC(version="Energy")
     # #     graph_ROC(version="Var")
-
-    # for x in ["Covertype", "MNIST", "Food101", "FasionMNIST"]:
-    #     DATASET = x
-    #     threshold_keys = {"Soft": 0, "Var": find_threshold_a("Var"), "Energy": find_threshold_a("Energy")}
-    #     print(f"{DATASET}, {'E'}")
-    #     print(f"Thresholds: {threshold_keys}")
-    #     get_average_k_uk_F1(threshold_keys=threshold_keys)
-    #     get_average_F1(threshold_keys=threshold_keys)
