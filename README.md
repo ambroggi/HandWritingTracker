@@ -1,6 +1,6 @@
 # Instructions to Generate data
 
-  This code was created off of a fork of "https://github.com/AAndrade1223/HandWritingTracker", the code was modified to save outputs into a logit file, use multiple datasets, and have unknown classes (classes that do not appear in the the training data).
+  This code was created off of a fork of "https://github.com/AAndrade1223/HandWritingTracker", from the same lab, which used the Varmax method as advised by the lab PI Dr. Gokhan Kul. The code was modified to save outputs into a logit file, use multiple datasets, and have unknown classes (classes that do not appear in the the training data).
   The original run instructions can be found in README_OLD.md, however, most of the optional arguments are not used. 
 
 
