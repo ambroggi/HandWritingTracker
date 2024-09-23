@@ -54,3 +54,7 @@ This file is less automated than the other files, it only has one argument
   * -d or --dataset: Possible dataset to use.
 
 Note: Energy scores work the opposite way from the other scores so we often need to invert them.
+
+
+# Other Information
+There were some other possible threshold selection methods, d and e but they were not fully planned out for the paper. Also all of the graphs made for the paper are avalible with data in the `Excel/` folder. 
